@@ -59,6 +59,33 @@ function MyPromise(executor) {
   executor(resolve, reject);
 }
 
+MyPromise.all = function(arrOfPromises) {
+  return new MyPromise(function(resolve, reject) {
+    var counter = 0;
+    var values = [];
+
+    var onFulfilled = function(value) {
+      counter += 1;
+      values.push(value);
+
+      /* resolve will only be called if all the
+      promises are resolved and hence triggering
+      the onFulfilled callback */
+      if (counter === arrOfPromises.length) {
+        resolve(values);
+      }
+    };
+
+    var onRejected = function(value) {
+      reject(value);
+    };
+
+    arrOfPromises.forEach(function(promise) {
+      promise.then(onFulfilled, onRejected);
+    });
+  });
+};
+
 //tests
 function fiveMachine(){
   return new MyPromise(function(resolve, reject){
@@ -110,3 +137,17 @@ sixMachine().then(logCallback, alerter); //should print 'I don't know, you proba
 
 //flattening
 fiveMachine().then(addSevenMachine).then(logCallback); //should print 'got 12'
+
+var promises = [ fiveMachine(), sixMachine() ];
+var promises2 = [ fiveMachine(), addSevenMachine(3) ];
+
+//test for MyPromise.all
+//The test below should get 'there are errors in one or more promises'
+MyPromise.all(promises).then(function(values) {
+  console.log("No error on any promises");
+}, function(values) { console.log("There are errors in one or more promises"); });
+
+//The test below should get 'No error on any promises'
+MyPromise.all(promises2).then(function(values) {
+  console.log("No error on any promises");
+}, function(values) { console.log("There are errors in one or more promises"); });
